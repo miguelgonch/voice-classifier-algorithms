@@ -132,6 +132,17 @@ newMLPLabels = codifyLabels(y_pred)
 # codify test labels
 newTestLabels= codifyLabels(y_test)
 
+# fig, axs = plt.subplots(3)
+# # GMM
+# axs[0].scatter(range(168),x_test[:, [41]], c=newGMMLabels[0], s=40, cmap='viridis')
+
+# # MLP
+# axs[1].scatter(range(168), x_test[:, [41]], c=newMLPLabels[0], s=40, cmap='viridis')
+
+# # Original
+# axs[2].scatter(range(168), x_test[:, [41]], c=newTestLabels[0], s=40, cmap='viridis')
+# plt.show()  
+
 accuracy2 = accuracy_score(y_true=newTestLabels[0], y_pred=newGMMLabels[0])
 print("GMM Accuracy: {:.2f}%".format(accuracy2*100))
 
@@ -155,7 +166,8 @@ for y_pred3 in GMMrediction:
     i=+1
     #print("GMM Guess: {}".format(observed_emotions[newGMMLabels[1][y_pred3]]))
 i = 0
-    #print("Original Label: {}".format(myLabel))
+    #print("Original Label: {}".format(myLabel)) 
+
 for num in range(len(myLabels)):
     print("MLP Guess: {}".format(resultsMlpo[num]))
     print("GMM Guess: {}".format(resultsGMM[num]))
