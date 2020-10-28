@@ -34,6 +34,19 @@ def extract_feature(file_name, mfcc, chroma, mel):
             result=np.hstack((result, mel))
     return result
 
+# Codify / normalize labels
+def codifyLabels(labels):
+    codiLabels = []
+    transLabels = {}
+    newLabels = []
+    for label in labels:
+        if label not in codiLabels:
+            codiLabels.append(label)
+            transLabels[label]=len(codiLabels)-1
+    for label in labels:
+        newLabels.append(transLabels[label])
+    return newLabels,transLabels
+
 #DataFlair - Emotions in the RAVDESS dataset
 emotions={
   '01':'neutral',
@@ -47,14 +60,17 @@ emotions={
 }
 
 #DataFlair - Emotions to observe
-observed_emotions=['calm', 'happy', 'fearful', 'disgust']
+#observed_emotions=['calm', 'happy', 'fearful', 'disgust']
+observed_emotions=['happy', 'angry','fearful','neutral']
+#observed_emotions=['fearful', 'happy','neutral','angry']
+#observed_emotions=['calm', 'happy', 'fearful', 'disgust']
 
 #DataFlair - Load the data and extract features for each sound file
 def load_data(test_size=0.2,split=True):
     if split:
         x,y=[],[]
         i=0
-        for file in glob.glob("Parciales\\Proyecto Final\\ravdess-data\\Actor_*\\*.wav"):
+        for file in glob.glob("ravdess-data\\Actor_*\\*.wav"):
             file_name=os.path.basename(file)
             emotion=emotions[file_name.split("-")[2]]
             if emotion not in observed_emotions:
@@ -68,9 +84,11 @@ def load_data(test_size=0.2,split=True):
     else:
         x,y=[],[]
         i=0
-        for file in glob.glob("Parciales\\Proyecto Final\\my-data\\Actor_*\\*.wav"):
+        for file in glob.glob("my-data\\Actor_*\\*.wav"):
             file_name=os.path.basename(file)
             emotion=emotions[file_name.split("-")[2]]
+            if emotion not in observed_emotions:
+                continue
             feature=extract_feature(file, mfcc=True, chroma=True, mel=True)
             x.append(feature)
             y.append(emotion)
@@ -88,7 +106,7 @@ print((x_train.shape[0], x_test.shape[0]))
 print(f'Features extracted: {x_train.shape[1]}')
 
 #DataFlair - Initialize the Multi Layer Perceptron Classifier
-model=MLPClassifier(alpha=0.01,solver='adam', learning_rate_init=0.001,batch_size=256, epsilon=1e-08, hidden_layer_sizes=(300,), learning_rate='adaptive', max_iter=500)
+model=MLPClassifier(alpha=0.001,solver='adam',tol=1e-4, learning_rate_init=0.001,batch_size=256, epsilon=1e-08, hidden_layer_sizes=(300,), learning_rate='adaptive', max_iter=900)
 
 #DataFlair - Train the model
 model.fit(x_train,y_train)
@@ -100,24 +118,10 @@ y_pred=model.predict(x_test)
 accuracy=accuracy_score(y_true=y_test, y_pred=y_pred)
 
 #DataFlair - Print the accuracy
-print("Accuracy: {:.2f}%".format(accuracy*100))
+print("MLP Accuracy: {:.2f}%".format(accuracy*100))
 
-gmm = GaussianMixture(n_components=8,tol=1e-4).fit(x_train)
-#labels = gmm.predict(x_train)
-#labels2 = gmm.fit_predict(x_train,y_train)
+gmm = GaussianMixture(n_components=len(observed_emotions),tol=1e-4, max_iter=700).fit(x_train)
 gmmLabels = gmm.predict(x_test)
-
-def codifyLabels(labels):
-    codiLabels = []
-    transLabels = {}
-    newLabels = []
-    for label in labels:
-        if label not in codiLabels:
-            codiLabels.append(label)
-            transLabels[label]=len(codiLabels)-1
-    for label in labels:
-        newLabels.append(transLabels[label])
-    return newLabels
 
 # GMM labels
 newGMMLabels = codifyLabels(gmmLabels)
@@ -128,8 +132,31 @@ newMLPLabels = codifyLabels(y_pred)
 # codify test labels
 newTestLabels= codifyLabels(y_test)
 
-accuracy2 =accuracy_score(y_true=newTestLabels, y_pred=newGMMLabels)
-print("Accuracy: {:.2f}%".format(accuracy2*100))
+accuracy2 = accuracy_score(y_true=newTestLabels[0], y_pred=newGMMLabels[0])
+print("GMM Accuracy: {:.2f}%".format(accuracy2*100))
 
-comparison=accuracy_score(y_true=newGMMLabels, y_pred=newMLPLabels)
-print("Comparison: {:.2f}%".format(comparison*100))
+comparison= accuracy_score(y_true=newGMMLabels[0], y_pred=newMLPLabels[0])
+print("GMM vs MLP Comparison: {:.2f}%".format(comparison*100))
+print("\n")
+
+myAudio,myLabels = load_data(split=False)
+MLPPrediction = model.predict(myAudio)
+GMMrediction = gmm.predict(myAudio)
+resultsMlpo = []
+resultsGMM = []
+i = 0
+for y_pred2 in MLPPrediction:
+    resultsMlpo.append([y_pred2,newMLPLabels[1][y_pred2]])
+    i=+1
+    #print("MLP Guess: {} {}".format(y_pred2,newMLPLabels[1][y_pred2]))
+i = 0
+for y_pred3 in GMMrediction:    
+    resultsGMM.append([observed_emotions[newGMMLabels[1][y_pred3]],newGMMLabels[1][y_pred3]])
+    i=+1
+    #print("GMM Guess: {}".format(observed_emotions[newGMMLabels[1][y_pred3]]))
+i = 0
+    #print("Original Label: {}".format(myLabel))
+for num in range(len(myLabels)):
+    print("MLP Guess: {}".format(resultsMlpo[num]))
+    print("GMM Guess: {}".format(resultsGMM[num]))
+    print("Original Label: {}\n".format(myLabels[num]))
