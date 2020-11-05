@@ -143,12 +143,16 @@ newTestLabels= codifyLabels(y_test)
 # axs[2].scatter(range(168), x_test[:, [41]], c=newTestLabels[0], s=40, cmap='viridis')
 # plt.show()  
 
+# Seria mejor con covarianza
 accuracy2 = accuracy_score(y_true=newTestLabels[0], y_pred=newGMMLabels[0])
 print("GMM Accuracy: {:.2f}%".format(accuracy2*100))
 
 comparison= accuracy_score(y_true=newGMMLabels[0], y_pred=newMLPLabels[0])
 print("GMM vs MLP Comparison: {:.2f}%".format(comparison*100))
 print("\n")
+
+if input("Test own recordings?")=="Y":
+    pass    
 
 myAudio,myLabels = load_data(split=False)
 MLPPrediction = model.predict(myAudio)
@@ -162,11 +166,10 @@ for y_pred2 in MLPPrediction:
     #print("MLP Guess: {} {}".format(y_pred2,newMLPLabels[1][y_pred2]))
 i = 0
 for y_pred3 in GMMrediction:    
-    resultsGMM.append([observed_emotions[newGMMLabels[1][y_pred3]],newGMMLabels[1][y_pred3]])
+    #resultsGMM.append([observed_emotions[newGMMLabels[1][y_pred3]],newGMMLabels[1][y_pred3]])
+    resultsGMM.append([newGMMLabels[1][y_pred3]])
     i=+1
     #print("GMM Guess: {}".format(observed_emotions[newGMMLabels[1][y_pred3]]))
-i = 0
-    #print("Original Label: {}".format(myLabel)) 
 
 for num in range(len(myLabels)):
     print("MLP Guess: {}".format(resultsMlpo[num]))
